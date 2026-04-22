@@ -1,115 +1,159 @@
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import { supabase } from './supabase';
 import type { AIImageEntry, Folder } from './types';
 
-interface AIImageDB extends DBSchema {
-    images: {
-        key: number;
-        value: AIImageEntry;
-        indexes: {
-            'createdAt': number;
-            'folderId': string;
-        };
-    };
-    folders: {
-        key: string;
-        value: Folder;
-        indexes: { 'createdAt': number };
-    };
-}
-
-const DB_NAME = 'ai-image-manager-db';
-const DB_VERSION = 3; // Incremented version to ensure index exists
-
 export const db = {
-    async getDB(): Promise<IDBPDatabase<AIImageDB>> {
-        return openDB<AIImageDB>(DB_NAME, DB_VERSION, {
-            upgrade(db, oldVersion, newVersion, transaction) {
-                console.log(`Upgrading DB from ${oldVersion} to ${newVersion}`);
-
-                // Initialize images store if not exists
-                if (!db.objectStoreNames.contains('images')) {
-                    const store = db.createObjectStore('images', { keyPath: 'id', autoIncrement: true });
-                    store.createIndex('createdAt', 'createdAt');
-                    store.createIndex('folderId', 'folderId'); // Create immediately
-                } else {
-                    // Ensure index exists for existing store
-                    const imageStore = transaction.objectStore('images');
-                    if (!imageStore.indexNames.contains('folderId')) {
-                        imageStore.createIndex('folderId', 'folderId');
-                        console.log("Created missing folderId index");
-                    }
-                }
-
-                if (!db.objectStoreNames.contains('folders')) {
-                    const folderStore = db.createObjectStore('folders', { keyPath: 'id' });
-                    folderStore.createIndex('createdAt', 'createdAt');
-                }
-            },
-        });
-    },
-
     async getAllEntries(folderId?: string): Promise<AIImageEntry[]> {
-        const db = await this.getDB();
+        let query = supabase
+            .from('images')
+            .select('*')
+            .order('created_at', { ascending: false });
+
         if (folderId) {
-            return db.getAllFromIndex('images', 'folderId', folderId);
-        } else {
-            // Use getAll() which fetches by Primary Key (ID).
-            // Since ID is auto-increment, this is effectively chronological.
-            // This avoids potential issues with the 'createdAt' index.
-            return db.getAll('images');
+            query = query.eq('folder_id', folderId);
         }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        return (data || []).map(row => ({
+            id: row.id,
+            imageUrl: row.image_url,
+            prompt: row.prompt,
+            negativePrompt: row.negative_prompt,
+            parameters: row.parameters,
+            tags: row.tags,
+            width: row.width,
+            height: row.height,
+            createdAt: row.created_at,
+            folderId: row.folder_id
+        }));
     },
 
-    async addEntry(entry: Omit<AIImageEntry, 'id'>) {
-        const db = await this.getDB();
-        return db.add('images', entry);
+    async addEntry(entry: Omit<AIImageEntry, 'id' | 'imageUrl'> & { imageBlob: Blob }) {
+        // 1. Upload image to Storage
+        const ext = entry.imageBlob.type === 'image/jpeg' ? 'jpeg' : 'png';
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('ai-images') // Shared bucket name. (You might want to create this bucket in Supabase)
+            .upload(fileName, entry.imageBlob, {
+                contentType: entry.imageBlob.type
+            });
+
+        if (uploadError) throw uploadError;
+
+        // 2. Get Public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('ai-images')
+            .getPublicUrl(fileName);
+
+        // 3. Insert into Database
+        const { data, error } = await supabase
+            .from('images')
+            .insert({
+                prompt: entry.prompt,
+                negative_prompt: entry.negativePrompt,
+                parameters: entry.parameters,
+                image_url: publicUrl,
+                width: entry.width,
+                height: entry.height,
+                tags: entry.tags,
+                folder_id: entry.folderId || null
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data.id;
     },
 
-    async deleteEntry(id: number) {
-        const db = await this.getDB();
-        return db.delete('images', id);
+    async deleteEntry(id: string) {
+        // Find entry to delete image from storage
+        const { data: entry } = await supabase.from('images').select('image_url').eq('id', id).single();
+        
+        if (entry && entry.image_url) {
+            // Extracts filename from URL. Format: .../storage/v1/object/public/ai-images/filename.png
+            const parts = entry.image_url.split('/');
+            const fileName = parts[parts.length - 1];
+            if (fileName) {
+                await supabase.storage.from('ai-images').remove([fileName]);
+            }
+        }
+
+        const { error } = await supabase
+            .from('images')
+            .delete()
+            .eq('id', id);
+            
+        if (error) throw error;
     },
 
-    async getEntry(id: number) {
-        const db = await this.getDB();
-        return db.get('images', id);
+    async getEntry(id: string): Promise<AIImageEntry | null> {
+        const { data: row, error } = await supabase
+            .from('images')
+            .select('*')
+            .eq('id', id)
+            .single();
+            
+        if (error) return null;
+        if (!row) return null;
+
+        return {
+            id: row.id,
+            imageUrl: row.image_url,
+            prompt: row.prompt,
+            negativePrompt: row.negative_prompt,
+            parameters: row.parameters,
+            tags: row.tags,
+            width: row.width,
+            height: row.height,
+            createdAt: row.created_at,
+            folderId: row.folder_id
+        };
     },
 
     // Folder Operations
     async getAllFolders(): Promise<Folder[]> {
-        const db = await this.getDB();
-        return db.getAllFromIndex('folders', 'createdAt');
+        const { data, error } = await supabase
+            .from('folders')
+            .select('*')
+            .order('created_at', { ascending: true });
+            
+        if (error) throw error;
+        
+        return (data || []).map(row => ({
+            id: row.id,
+            name: row.name,
+            createdAt: row.created_at
+        }));
     },
 
     async createFolder(name: string): Promise<string> {
-        const db = await this.getDB();
-        const folder: Folder = {
-            id: crypto.randomUUID(),
-            name,
-            createdAt: Date.now()
-        };
-        await db.add('folders', folder);
-        return folder.id;
+        const { data, error } = await supabase
+            .from('folders')
+            .insert({ name })
+            .select()
+            .single();
+            
+        if (error) throw error;
+        return data.id;
     },
 
     async updateFolder(id: string, name: string) {
-        const db = await this.getDB();
-        const tx = db.transaction('folders', 'readwrite');
-        const store = tx.objectStore('folders');
-        const folder = await store.get(id);
-        if (folder) {
-            folder.name = name;
-            await store.put(folder);
-        }
-        await tx.done;
+        const { error } = await supabase
+            .from('folders')
+            .update({ name })
+            .eq('id', id);
+            
+        if (error) throw error;
     },
 
     async deleteFolder(id: string) {
-        const db = await this.getDB();
-        // Option: Delete all images in folder or move to root?
-        // For safety, let's keep images but unset folderId (move to uncategorized) or delete them.
-        // User didn't specify, but safer to just delete folder for now.
-        // Ideally we should handle child images. Let's start with simple deletion.
-        return db.delete('folders', id);
+        const { error } = await supabase
+            .from('folders')
+            .delete()
+            .eq('id', id);
+            
+        if (error) throw error;
     }
 };

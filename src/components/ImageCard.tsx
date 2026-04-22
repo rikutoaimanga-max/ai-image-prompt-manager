@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Copy } from 'lucide-react';
 import type { AIImageEntry } from '../lib/types';
 
@@ -8,7 +8,7 @@ interface ImageCardProps {
 }
 
 export const ImageCard: React.FC<ImageCardProps> = ({ entry, onClick }) => {
-    const imageUrl = useMemo(() => URL.createObjectURL(entry.imageBlob), [entry.imageBlob]);
+    const imageUrl = entry.imageUrl;
 
     const copyPrompt = (e: React.MouseEvent) => {
         e.stopPropagation();

@@ -1,18 +1,19 @@
 export interface Folder {
     id: string;
     name: string;
-    createdAt: number;
+    createdAt: number | string; // Supabase returns ISO string, DB might use it
 }
 
 export interface AIImageEntry {
-    id?: number;
-    imageBlob: Blob; // The actual image data
+    id: string; // UUID
+    imageUrl: string; // URL from Supabase Storage
+    imageBlob?: Blob; // Optional for upload only
     prompt: string;
     negativePrompt?: string;
-    parameters?: string; // Additional settings (Seed, Steps, Scale etc.)
+    parameters?: string;
     tags?: string[];
     width?: number;
     height?: number;
-    createdAt: number;
-    folderId?: string; // Optional for backward compatibility (root folder)
+    createdAt: number | string;
+    folderId?: string | null;
 }

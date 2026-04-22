@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Folder as FolderIcon, Plus, Trash2, FolderOpen, ChevronLeft, ChevronRight, Check, X, MoreVertical, Edit2 } from 'lucide-react';
+import { Folder as FolderIcon, Plus, Trash2, FolderOpen, ChevronLeft, ChevronRight, Check, X, MoreVertical, Edit2, LogOut } from 'lucide-react';
 import { db } from '../lib/db';
 import type { Folder } from '../lib/types';
 import { Input } from './Input';
+import { supabase } from '../lib/supabase';
 
 interface SidebarProps {
     currentFolderId: string | null;
@@ -40,23 +41,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentFolderId, onFolderSelec
 
     const handleUpdateFolder = async (e: React.SyntheticEvent) => {
         e.preventDefault();
-        console.log("Updating folder:", editingFolderId, editName); // DEBUG
+        console.log("Updating folder:", editingFolderId, editName);
         if (!editingFolderId || !editName.trim()) return;
 
         try {
             await db.updateFolder(editingFolderId, editName);
             setEditingFolderId(null);
             loadFolders();
-            console.log("Folder updated successfully"); // DEBUG
         } catch (error) {
             console.error('Failed to update folder:', error);
             alert('フォルダ名の変更に失敗しました');
         }
     };
-
-    // ... (rest of the file until the list item)
-
-
 
     const handleCreateFolder = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -85,6 +81,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentFolderId, onFolderSelec
             loadFolders();
         } catch (error) {
             console.error('Failed to delete folder:', error);
+        }
+    };
+
+    const handleLogout = async () => {
+        if (confirm('ログアウトしますか？')) {
+            await supabase.auth.signOut();
         }
     };
 
@@ -165,16 +167,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentFolderId, onFolderSelec
                     minWidth: isCollapsed ? '72px' : '240px',
                     flexShrink: 0,
                     height: 'calc(100vh - 70px)', // Adjust for navbar height
-                    position: 'sticky', // Keep sticky but relative to the flex container
-                    top: '70px', // Navbar height
+                    position: 'sticky',
+                    top: '70px',
                     left: 0,
                     display: 'flex',
                     flexDirection: 'column',
                     padding: 'var(--spacing-md)',
-                    // Remove borderRadius for docked look on left side
                     borderTopRightRadius: 'var(--radius-lg)',
                     borderBottomRightRadius: 'var(--radius-lg)',
-                    marginLeft: 0, // Docked to left
+                    marginLeft: 0,
                     transition: 'width 0.3s ease, min-width 0.3s ease'
                 }}
             >
@@ -287,7 +288,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentFolderId, onFolderSelec
                                                 justifyContent: isCollapsed ? 'center' : 'flex-start',
                                                 flex: 1,
                                                 width: 'auto',
-                                                minWidth: 0, // Allow Text Overflow
+                                                minWidth: 0,
                                                 textAlign: 'left'
                                             }}
                                             title={isCollapsed ? folder.name : ""}
@@ -308,13 +309,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentFolderId, onFolderSelec
                                                     style={{
                                                         padding: '4px 8px',
                                                         color: 'var(--text-muted)',
-                                                        opacity: 1 // Always visible as requested
+                                                        opacity: 1
                                                     }}
                                                     title="メニュー"
                                                 >
                                                     <MoreVertical size={16} />
                                                 </button>
-                                                {/* Fixed menu rendered outside */}
                                             </div>
                                         )}
                                     </>
@@ -360,14 +360,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentFolderId, onFolderSelec
                     paddingTop: 'var(--spacing-md)',
                     marginTop: 'auto',
                     display: 'flex',
-                    justifyContent: isCollapsed ? 'center' : 'flex-end'
+                    flexDirection: 'column',
+                    gap: '4px'
                 }}>
+                    <button
+                        onClick={handleLogout}
+                        className="btn-ghost"
+                        style={{ padding: '8px', width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start', color: 'var(--text-muted)' }}
+                        title="ログアウト"
+                    >
+                        <LogOut size={20} style={{ marginRight: isCollapsed ? 0 : '8px' }} />
+                        {!isCollapsed && <span>ログアウト</span>}
+                    </button>
+                    <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '4px 0' }} />
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
                         className="btn-ghost"
-                        style={{ padding: '8px' }}
+                        style={{ padding: '8px', display: 'flex', justifyContent: isCollapsed ? 'center' : 'flex-start' }}
                     >
                         {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+                        {!isCollapsed && <span style={{ marginLeft: '8px' }}>折りたたむ</span>}
                     </button>
                 </div>
             </aside>

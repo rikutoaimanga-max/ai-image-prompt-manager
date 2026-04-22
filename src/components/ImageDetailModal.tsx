@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { Button } from './Button';
-import { Copy, Trash2, Calendar, Settings, FileText } from 'lucide-react';
+import { Copy, Trash2, Calendar, Settings, FileText, Share2, Check } from 'lucide-react';
 import type { AIImageEntry } from '../lib/types';
 import { db } from '../lib/db';
 
@@ -12,13 +12,22 @@ interface ImageDetailModalProps {
 }
 
 export const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ entry, onClose, onDeleted }) => {
-    const imageUrl = useMemo(() => entry ? URL.createObjectURL(entry.imageBlob) : null, [entry]);
+    const [copiedShare, setCopiedShare] = useState(false);
 
-    if (!entry || !imageUrl) return null;
+    if (!entry) return null;
+    const imageUrl = entry.imageUrl;
 
     const copyText = (text: string) => {
         navigator.clipboard.writeText(text);
         // TODO: Toast
+    };
+
+    const handleShare = () => {
+        if (!entry.id) return;
+        const shareUrl = `${window.location.origin}/?share=${entry.id}`;
+        navigator.clipboard.writeText(shareUrl);
+        setCopiedShare(true);
+        setTimeout(() => setCopiedShare(false), 2000);
     };
 
     const handleDelete = async () => {
@@ -31,7 +40,7 @@ export const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ entry, onClo
         }
     };
 
-    const formatDate = (ts: number) => {
+    const formatDate = (ts: number | string) => {
         return new Date(ts).toLocaleString('ja-JP');
     };
 
@@ -129,9 +138,14 @@ export const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ entry, onClo
                             {formatDate(entry.createdAt)}
                         </div>
 
-                        <Button variant="danger" icon={<Trash2 size={16} />} onClick={handleDelete}>
-                            削除
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button variant="ghost" icon={copiedShare ? <Check size={16} /> : <Share2 size={16} />} onClick={handleShare}>
+                                {copiedShare ? 'コピーしました' : '共有リンク'}
+                            </Button>
+                            <Button variant="danger" icon={<Trash2 size={16} />} onClick={handleDelete}>
+                                削除
+                            </Button>
+                        </div>
                     </div>
 
                 </div>

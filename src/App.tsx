@@ -4,8 +4,12 @@ import { AddEntryModal } from './components/AddEntryModal';
 import { ImageDetailModal } from './components/ImageDetailModal';
 import { Gallery } from './components/Gallery';
 import { Sidebar } from './components/Sidebar';
+import { Auth } from './components/Auth';
+import { SharedView } from './components/SharedView';
 import { db } from './lib/db';
+import { supabase } from './lib/supabase';
 import type { AIImageEntry } from './lib/types';
+import type { Session } from '@supabase/supabase-js';
 
 function App() {
   const [entries, setEntries] = useState<AIImageEntry[]>([]);
@@ -13,12 +17,40 @@ function App() {
   const [selectedEntry, setSelectedEntry] = useState<AIImageEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  
+  // Auth & Routing state
+  const [session, setSession] = useState<Session | null>(null);
+  const [shareId, setShareId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check URL parameters for share route
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareParam = urlParams.get('share');
+    if (shareParam) {
+      setShareId(shareParam);
+      return; // Skip auth check if shared view
+    }
+
+    // Initialize Auth
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const loadEntries = async () => {
+    if (!session && !shareId) return; // Only load for authenticated user (unless shared view)
     setIsLoading(true);
     try {
       const data = await db.getAllEntries(currentFolderId || undefined);
-      setEntries(data.reverse());
+      setEntries(data);
     } catch (error) {
       console.error("Failed to load entries", error);
     } finally {
@@ -27,8 +59,19 @@ function App() {
   };
 
   useEffect(() => {
-    loadEntries();
-  }, [currentFolderId]);
+    if (!shareId && session) {
+      loadEntries();
+    }
+  }, [currentFolderId, session, shareId]);
+
+  // Routing
+  if (shareId) {
+    return <SharedView shareId={shareId} />;
+  }
+
+  if (!session) {
+    return <Auth />;
+  }
 
   return (
     <Layout

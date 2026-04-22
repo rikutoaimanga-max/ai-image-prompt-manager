@@ -34,7 +34,7 @@ export const db = {
         const ext = entry.imageBlob.type === 'image/jpeg' ? 'jpeg' : 'png';
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
         
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
             .from('ai-images') // Shared bucket name. (You might want to create this bucket in Supabase)
             .upload(fileName, entry.imageBlob, {
                 contentType: entry.imageBlob.type

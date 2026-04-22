@@ -22,7 +22,7 @@ export const migrateDataToSupabase = async (
 
             // 1. Upload Image to Storage
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
                 .from('ai-images')
                 .upload(fileName, entry.imageBlob, {
                     contentType: 'image/png'

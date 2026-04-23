@@ -3,9 +3,10 @@ import { Image, Plus } from 'lucide-react';
 
 interface NavbarProps {
   onAddClick: () => void;
+  isReadOnly?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onAddClick }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onAddClick, isReadOnly = false }) => {
   return (
     <header className="glass-panel" style={{
       position: 'fixed',
@@ -33,28 +34,31 @@ export const Navbar: React.FC<NavbarProps> = ({ onAddClick }) => {
           </h1>
         </div>
 
-        <button
-          onClick={onAddClick}
-          className="flex-center"
-          style={{
-            background: 'var(--primary)',
-            color: 'white',
-            border: 'none',
-            borderRadius: 'var(--radius-md)',
-            padding: '8px 16px',
-            fontSize: '0.9rem',
-            fontWeight: 600,
-            gap: '8px',
-            boxShadow: '0 4px 12px var(--primary-glow)',
-            transition: 'transform 0.2s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-        >
-          <Plus size={18} />
-          <span>新規登録</span>
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={onAddClick}
+            className="flex-center"
+            style={{
+              background: 'var(--primary)',
+              color: 'white',
+              border: 'none',
+              borderRadius: 'var(--radius-md)',
+              padding: '8px 16px',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              gap: '8px',
+              boxShadow: '0 4px 12px var(--primary-glow)',
+              transition: 'transform 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <Plus size={18} />
+            <span>新規登録</span>
+          </button>
+        )}
       </div>
     </header>
   );
 };
+

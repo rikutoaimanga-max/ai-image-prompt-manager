@@ -9,9 +9,10 @@ interface SidebarProps {
     currentFolderId: string | null;
     onFolderSelect: (folderId: string | null) => void;
     className?: string;
+    isReadOnly?: boolean;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentFolderId, onFolderSelect, className }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentFolderId, onFolderSelect, className, isReadOnly = false }) => {
     const [folders, setFolders] = useState<Folder[]>([]);
     const [isCreating, setIsCreating] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
@@ -181,28 +182,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentFolderId, onFolderSelec
             >
                 <div className="flex-between" style={{ marginBottom: 'var(--spacing-md)', justifyContent: isCollapsed ? 'center' : 'space-between' }}>
                     {!isCollapsed && <h2 className="text-lg font-bold" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>フォルダ</h2>}
-                    <button
-                        onClick={() => {
-                            setIsCreating(true);
-                            setIsCollapsed(false);
-                        }}
-                        className="btn-ghost"
-                        style={{ padding: '4px', display: isCollapsed ? 'none' : 'block' }}
-                        title="新規フォルダ"
-                    >
-                        <Plus size={20} />
-                    </button>
-                    <button
-                        onClick={() => {
-                            setIsCreating(true);
-                            setIsCollapsed(false);
-                        }}
-                        className="btn-ghost"
-                        style={{ padding: '4px', display: isCollapsed ? 'block' : 'none' }}
-                        title="新規フォルダ"
-                    >
-                        <Plus size={20} />
-                    </button>
+                    {!isReadOnly && (
+                        <>
+                            <button
+                                onClick={() => {
+                                    setIsCreating(true);
+                                    setIsCollapsed(false);
+                                }}
+                                className="btn-ghost"
+                                style={{ padding: '4px', display: isCollapsed ? 'none' : 'block' }}
+                                title="新規フォルダ"
+                            >
+                                <Plus size={20} />
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsCreating(true);
+                                    setIsCollapsed(false);
+                                }}
+                                className="btn-ghost"
+                                style={{ padding: '4px', display: isCollapsed ? 'block' : 'none' }}
+                                title="新規フォルダ"
+                            >
+                                <Plus size={20} />
+                            </button>
+                        </>
+                    )}
                 </div>
 
                 <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
@@ -301,7 +306,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentFolderId, onFolderSelec
                                             )}
                                         </button>
 
-                                        {!isCollapsed && (
+                                        {!isCollapsed && !isReadOnly && (
                                             <div className="relative">
                                                 <button
                                                     onClick={(e) => toggleMenu(e, folder.id)}
@@ -363,16 +368,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentFolderId, onFolderSelec
                     flexDirection: 'column',
                     gap: '4px'
                 }}>
-                    <button
-                        onClick={handleLogout}
-                        className="btn-ghost"
-                        style={{ padding: '8px', width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start', color: 'var(--text-muted)' }}
-                        title="ログアウト"
-                    >
-                        <LogOut size={20} style={{ marginRight: isCollapsed ? 0 : '8px' }} />
-                        {!isCollapsed && <span>ログアウト</span>}
-                    </button>
-                    <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '4px 0' }} />
+                    {!isReadOnly && (
+                        <>
+                            <button
+                                onClick={handleLogout}
+                                className="btn-ghost"
+                                style={{ padding: '8px', width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start', color: 'var(--text-muted)' }}
+                                title="ログアウト"
+                            >
+                                <LogOut size={20} style={{ marginRight: isCollapsed ? 0 : '8px' }} />
+                                {!isCollapsed && <span>ログアウト</span>}
+                            </button>
+                            <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '4px 0' }} />
+                        </>
+                    )}
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
                         className="btn-ghost"

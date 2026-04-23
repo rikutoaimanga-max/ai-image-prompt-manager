@@ -5,12 +5,13 @@ interface LayoutProps {
     children: React.ReactNode;
     onAddClick: () => void;
     sidebar?: React.ReactNode; // Added sidebar prop
+    isReadOnly?: boolean;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, onAddClick, sidebar }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, onAddClick, sidebar, isReadOnly = false }) => {
     return (
         <div className="main-layout">
-            <Navbar onAddClick={onAddClick} />
+            <Navbar onAddClick={onAddClick} isReadOnly={isReadOnly} />
 
             <div style={{ display: 'flex', flex: 1, marginTop: '70px' }}>
                 {sidebar}

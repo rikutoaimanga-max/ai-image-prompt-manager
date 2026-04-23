@@ -9,9 +9,10 @@ interface ImageDetailModalProps {
     entry: AIImageEntry | null;
     onClose: () => void;
     onDeleted: () => void;
+    isReadOnly?: boolean;
 }
 
-export const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ entry, onClose, onDeleted }) => {
+export const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ entry, onClose, onDeleted, isReadOnly = false }) => {
     const [copiedShare, setCopiedShare] = useState(false);
 
     if (!entry) return null;
@@ -138,14 +139,16 @@ export const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ entry, onClo
                             {formatDate(entry.createdAt)}
                         </div>
 
-                        <div className="flex gap-2">
-                            <Button variant="ghost" icon={copiedShare ? <Check size={16} /> : <Share2 size={16} />} onClick={handleShare}>
-                                {copiedShare ? 'コピーしました' : '共有リンク'}
-                            </Button>
-                            <Button variant="danger" icon={<Trash2 size={16} />} onClick={handleDelete}>
-                                削除
-                            </Button>
-                        </div>
+                        {!isReadOnly && (
+                            <div className="flex gap-2">
+                                <Button variant="ghost" icon={copiedShare ? <Check size={16} /> : <Share2 size={16} />} onClick={handleShare}>
+                                    {copiedShare ? 'コピーしました' : '共有リンク'}
+                                </Button>
+                                <Button variant="danger" icon={<Trash2 size={16} />} onClick={handleDelete}>
+                                    削除
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
                 </div>

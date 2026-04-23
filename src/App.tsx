@@ -6,6 +6,7 @@ import { Gallery } from './components/Gallery';
 import { Sidebar } from './components/Sidebar';
 import { Auth } from './components/Auth';
 import { SharedView } from './components/SharedView';
+import { PublicGalleryView } from './components/PublicGalleryView';
 import { db } from './lib/db';
 import { supabase } from './lib/supabase';
 import type { AIImageEntry } from './lib/types';
@@ -21,8 +22,15 @@ function App() {
   // Auth & Routing state
   const [session, setSession] = useState<Session | null>(null);
   const [shareId, setShareId] = useState<string | null>(null);
+  const [isGalleryView, setIsGalleryView] = useState(false);
 
   useEffect(() => {
+    // Check for gallery route
+    if (window.location.pathname === '/gallery') {
+      setIsGalleryView(true);
+      return; // Skip auth check for public gallery
+    }
+
     // Check URL parameters for share route
     const urlParams = new URLSearchParams(window.location.search);
     const shareParam = urlParams.get('share');
@@ -65,6 +73,10 @@ function App() {
   }, [currentFolderId, session, shareId]);
 
   // Routing
+  if (isGalleryView) {
+    return <PublicGalleryView />;
+  }
+
   if (shareId) {
     return <SharedView shareId={shareId} />;
   }

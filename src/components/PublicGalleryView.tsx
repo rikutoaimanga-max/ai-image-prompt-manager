@@ -56,6 +56,7 @@ export const PublicGalleryView: React.FC = () => {
                 entry={selectedEntry}
                 onClose={() => setSelectedEntry(null)}
                 onDeleted={() => {}} // Disabled
+                onEdit={() => {}} // Disabled
                 isReadOnly={true}
             />
         </Layout>

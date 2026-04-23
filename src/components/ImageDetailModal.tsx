@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { Button } from './Button';
-import { Copy, Trash2, Calendar, Settings, FileText, Share2, Check } from 'lucide-react';
+import { Copy, Trash2, Calendar, Settings, FileText, Share2, Check, Edit2 } from 'lucide-react';
 import type { AIImageEntry } from '../lib/types';
 import { db } from '../lib/db';
 
@@ -9,10 +9,11 @@ interface ImageDetailModalProps {
     entry: AIImageEntry | null;
     onClose: () => void;
     onDeleted: () => void;
+    onEdit: () => void;
     isReadOnly?: boolean;
 }
 
-export const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ entry, onClose, onDeleted, isReadOnly = false }) => {
+export const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ entry, onClose, onDeleted, onEdit, isReadOnly = false }) => {
     const [copiedShare, setCopiedShare] = useState(false);
 
     if (!entry) return null;
@@ -141,6 +142,9 @@ export const ImageDetailModal: React.FC<ImageDetailModalProps> = ({ entry, onClo
 
                         {!isReadOnly && (
                             <div className="flex gap-2">
+                                <Button variant="ghost" icon={<Edit2 size={16} />} onClick={onEdit}>
+                                    編集
+                                </Button>
                                 <Button variant="ghost" icon={copiedShare ? <Check size={16} /> : <Share2 size={16} />} onClick={handleShare}>
                                     {copiedShare ? 'コピーしました' : '共有リンク'}
                                 </Button>

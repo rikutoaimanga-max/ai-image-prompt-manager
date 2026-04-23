@@ -67,6 +67,21 @@ export const db = {
         return data.id;
     },
 
+    async updateEntry(id: string, updates: Partial<Omit<AIImageEntry, 'id' | 'imageUrl' | 'imageBlob' | 'createdAt'>>) {
+        const { error } = await supabase
+            .from('images')
+            .update({
+                prompt: updates.prompt,
+                negative_prompt: updates.negativePrompt,
+                parameters: updates.parameters,
+                tags: updates.tags,
+                folder_id: updates.folderId
+            })
+            .eq('id', id);
+
+        if (error) throw error;
+    },
+
     async deleteEntry(id: string) {
         // Find entry to delete image from storage
         const { data: entry } = await supabase.from('images').select('image_url').eq('id', id).single();

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { AddEntryModal } from './components/AddEntryModal';
+import { EditEntryModal } from './components/EditEntryModal';
 import { ImageDetailModal } from './components/ImageDetailModal';
 import { Gallery } from './components/Gallery';
 import { Sidebar } from './components/Sidebar';
@@ -15,6 +16,7 @@ import type { Session } from '@supabase/supabase-js';
 function App() {
   const [entries, setEntries] = useState<AIImageEntry[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<AIImageEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -119,6 +121,17 @@ function App() {
         entry={selectedEntry}
         onClose={() => setSelectedEntry(null)}
         onDeleted={loadEntries}
+        onEdit={() => setIsEditModalOpen(true)}
+      />
+
+      <EditEntryModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onEdited={() => {
+          loadEntries();
+          setSelectedEntry(null); // Close detail modal to refresh data properly
+        }}
+        entry={selectedEntry}
       />
     </Layout>
   );
